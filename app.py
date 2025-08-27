@@ -83,6 +83,9 @@ def generate_frames():
 
 @app.route("/liveview/start", methods=["GET"])
 def start_stream():
+    if SIMULATION:
+        return jsonify({"status": "Stream started"})
+
     global stream_active
     if not init_camera():
         return jsonify({"error": "Camera initialization failed"}), 500
@@ -96,6 +99,9 @@ def start_stream():
 
 @app.route("/liveview/stop", methods=["GET"])
 def stop_stream():
+    if SIMULATION:
+        return jsonify({"status": "Stream stopped"})
+
     global stream_active
     stream_active = False
     release_camera()
