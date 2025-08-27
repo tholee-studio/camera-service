@@ -12,7 +12,7 @@ from PIL import Image
 
 HOST = "0.0.0.0"
 PORT = 2461
-SIMULATION = True
+SIMULATION = False
 
 logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s %(levelname)s: %(message)s"
@@ -160,6 +160,104 @@ def capture():
         return jsonify({"error": str(ex)}), 500
     except Exception as ex:
         release_camera()
+        return jsonify({"error": str(ex)}), 500
+
+
+@app.route("/exposure/options", methods=["GET"])
+def get_exposure_options():
+    """Get available options for ISO, Shutter Speed, Aperture"""
+    if not init_camera():
+        return jsonify({"error": "Camera not available"}), 503
+
+    try:
+        with camera_lock:
+            config = camera.get_config()
+            iso_options = [
+                str(choice) for choice in config.get_child_by_name("iso").get_choices()
+            ]
+            shutter_options = [
+                str(choice)
+                for choice in config.get_child_by_name("shutterspeed").get_choices()
+            ]
+            aperture_options = [
+                str(choice)
+                for choice in config.get_child_by_name("aperture").get_choices()
+            ]
+
+            return jsonify(
+                {
+                    "iso": iso_options,
+                    "shutter": shutter_options,
+                    "aperture": aperture_options,
+                }
+            )
+
+    except gp.GPhoto2Error as ex:
+        return jsonify({"error": str(ex)}), 500
+    except Exception as ex:
+        return jsonify({"error": str(ex)}), 500
+
+
+@app.route("/exposure", methods=["GET"])
+def get_exposure():
+    """Get current exposure settings"""
+    if not init_camera():
+        return jsonify({"error": "Camera not available"}), 503
+    try:
+        with camera_lock:
+            config = camera.get_config()
+            iso = config.get_child_by_name("iso").get_value()
+            shutter = config.get_child_by_name("shutterspeed").get_value()
+            aperture = config.get_child_by_name("aperture").get_value()
+            return jsonify({"iso": iso, "shutter": shutter, "aperture": aperture})
+    except gp.GPhoto2Error as ex:
+        return jsonify({"error": str(ex)}), 500
+    except Exception as ex:
+        return jsonify({"error": str(ex)}), 500
+
+
+@app.route("/exposure", methods=["POST"])
+def set_exposure_params():
+    """Set exposure settings via query params"""
+    if not init_camera():
+        return jsonify({"error": "Camera not available"}), 503
+
+    iso = request.args.get("iso")
+    shutter = request.args.get("shutter")
+    aperture = request.args.get("aperture")
+
+    try:
+        with camera_lock:
+            config = camera.get_config()
+
+            if iso:
+                try:
+                    config.get_child_by_name("iso").set_value(str(iso))
+                except gp.GPhoto2Error:
+                    return jsonify({"error": f"Invalid ISO value: {iso}"}), 400
+
+            if shutter:
+                try:
+                    config.get_child_by_name("shutterspeed").set_value(str(shutter))
+                except gp.GPhoto2Error:
+                    return jsonify({"error": f"Invalid Shutter value: {shutter}"}), 400
+
+            if aperture:
+                try:
+                    config.get_child_by_name("aperture").set_value(str(aperture))
+                except gp.GPhoto2Error:
+                    return (
+                        jsonify({"error": f"Invalid Aperture value: {aperture}"}),
+                        400,
+                    )
+
+            camera.set_config(config)
+
+        return jsonify({"status": "ok"}), 200
+
+    except gp.GPhoto2Error as ex:
+        return jsonify({"error": str(ex)}), 500
+    except Exception as ex:
         return jsonify({"error": str(ex)}), 500
 
 
