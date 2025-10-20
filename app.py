@@ -264,9 +264,17 @@ def set_exposure_params():
 @app.route("/video", methods=["POST"])
 def video():
     files = request.files.getlist("photos[]")
-
+    
     if not files:
         return {"error": "No images uploaded"}, 400
+
+    orientation = request.form.get("orientation") or request.args.get("orientation")
+    if orientation == "landscape":
+        output_width = 1080
+        output_height = 720
+    else:
+        output_width = 720
+        output_height = 1080
 
     tmp_dir = tempfile.mkdtemp()
     image_paths = []
@@ -293,8 +301,8 @@ def video():
     container = av.open(output_path, mode="w")
     stream = container.add_stream("libx264", rate=fps)
     stream.pix_fmt = "yuv420p"
-    stream.width = 1080
-    stream.height = 720
+    stream.width = output_width
+    stream.height = output_height
 
     stream.options = {
         "preset": "superfast",
