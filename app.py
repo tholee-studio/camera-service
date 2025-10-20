@@ -304,9 +304,7 @@ def video():
     stream.width = output_width
     stream.height = output_height
 
-    stream.options = {
-        "preset": "superfast",
-    }
+    stream.options = {"preset": "veryfast", "crf": "30"}
 
     # generate frame sesuai total durasi
     for i in range(total_frames):
