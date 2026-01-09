@@ -9,6 +9,7 @@ from waitress import serve
 import logging
 import av
 from PIL import Image
+from playsound3 import playsound
 
 HOST = "0.0.0.0"
 PORT = 2461
@@ -137,6 +138,9 @@ def capture():
 
     try:
         with camera_lock:
+            if os.path.exists("shutter.mp3"):
+                sound = playsound("shutter.mp3", block=False)
+
             file_path = gp.check_result(
                 gp.gp_camera_capture(camera, gp.GP_CAPTURE_IMAGE)
             )

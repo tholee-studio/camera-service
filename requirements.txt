@@ -4,3 +4,4 @@ waitress==3.0.*
 gphoto2==2.6.2
 av==15.0.*
 pillow==11.3.*
+playsound3==3.3.*
